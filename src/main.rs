@@ -49,21 +49,12 @@ fn main() {
         )
         .add_startup_system(setup) // startupは複数登録するとまずい
         .add_system(position_transform)
+        .add_system(spawn_mino)
         .run();
 }
 
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
-    commands.insert_resource(Materials {
-        colors: vec![
-            Color::rgb_u8(64, 230, 100),
-            Color::rgb_u8(220, 64, 90),
-            Color::rgb_u8(70, 150, 210),
-            Color::rgb_u8(220, 230, 70),
-            Color::rgb_u8(35, 220, 241),
-            Color::rgb_u8(240, 140, 70),
-        ],
-    });
     commands.insert_resource(Minos(vec![
         Mino {
             patterns: vec![(0, 0), (0, -1), (0, 1), (0, 2)], // I
@@ -91,12 +82,32 @@ fn setup(mut commands: Commands) {
         },
         Mino {
             patterns: vec![(0, 0), (-1, 0), (1, 0), (0, 1)], // T
-            color: Color::hex("9C0FBF").unwrap()
+            color: Color::hex("9C0FBF").unwrap(),
         },
     ]))
 }
 
-fn spawn_block(mut commands: Commands, color: Color, position: Position) {
+fn spawn_mino(mut commands: Commands, minos: Res<Minos>) {
+    let mut rng = rand::thread_rng();
+    let mino_index : usize = rng.gen::<usize>() % minos.0.len();
+    let next_mino = &minos.0[mino_index];
+
+    let pos_x = X_LENGTH as i32 / 2;
+    let pos_y = Y_LENGTH as i32 / 2;
+
+    next_mino.patterns.iter().for_each(|(r_x, r_y)| {
+        spawn_block(
+            &mut commands,
+            next_mino.color,
+            Position {
+                x: pos_x + r_x,
+                y: pos_y + r_y,
+            },
+        )
+    })
+}
+
+fn spawn_block(commands: &mut Commands, color: Color, position: Position) {
     commands
         .spawn(SpriteBundle {
             sprite: Sprite {
