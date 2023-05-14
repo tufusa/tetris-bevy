@@ -22,6 +22,14 @@ struct Materials {
     colors: Vec<Color>,
 }
 
+struct Mino {
+    patterns: Vec<(i32, i32)>,
+    color: Color,
+}
+
+#[derive(Resource)]
+struct Minos(Vec<Mino>);
+
 fn main() {
     App::new()
         .add_plugins(
@@ -40,7 +48,6 @@ fn main() {
                 }),
         )
         .add_startup_system(setup) // startupは複数登録するとまずい
-        .add_system(spawn_block)
         .add_system(position_transform)
         .run();
 }
@@ -57,21 +64,48 @@ fn setup(mut commands: Commands) {
             Color::rgb_u8(240, 140, 70),
         ],
     });
+    commands.insert_resource(Minos(vec![
+        Mino {
+            patterns: vec![(0, 0), (0, -1), (0, 1), (0, 2)], // I
+            color: Color::hex("84CDEE").unwrap(),
+        },
+        Mino {
+            patterns: vec![(0, 0), (1, 0), (-1, 0), (1, 1)], // L
+            color: Color::hex("FFB21B").unwrap(),
+        },
+        Mino {
+            patterns: vec![(0, 0), (1, 0), (-1, 0), (-1, 1)], // J
+            color: Color::hex("021496").unwrap(),
+        },
+        Mino {
+            patterns: vec![(0, 0), (0, 1), (1, 0), (-1, 1)], // Z
+            color: Color::hex("DE0000").unwrap(),
+        },
+        Mino {
+            patterns: vec![(0, 0), (0, 1), (-1, 0), (1, 1)], // S
+            color: Color::hex("88FF55").unwrap(),
+        },
+        Mino {
+            patterns: vec![(0, 0), (0, 1), (1, 0), (1, 1)], // O
+            color: Color::hex("F9E909").unwrap(),
+        },
+        Mino {
+            patterns: vec![(0, 0), (-1, 0), (1, 0), (0, 1)], // T
+            color: Color::hex("9C0FBF").unwrap()
+        },
+    ]))
 }
 
-fn spawn_block(mut commands: Commands, materials: Res<Materials>) {
-    let mut rng = rand::thread_rng();
-    let color_index: usize = rng.gen::<usize>() % materials.colors.len();
-
+fn spawn_block(mut commands: Commands, color: Color, position: Position) {
     commands
         .spawn(SpriteBundle {
             sprite: Sprite {
-                color: materials.colors[color_index],
+                color: color,
                 ..Default::default()
             },
             ..Default::default()
         })
-        .insert(Position { x: 1, y: 1 });
+        .insert(position);
 }
 
 fn position_transform(mut position_query: Query<(&Position, &mut Transform, &mut Sprite)>) {
