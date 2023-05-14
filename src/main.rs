@@ -17,11 +17,6 @@ struct Position {
     y: i32,
 }
 
-#[derive(Resource)]
-struct Materials {
-    colors: Vec<Color>,
-}
-
 struct Mino {
     patterns: Vec<(i32, i32)>,
     color: Color,
@@ -29,6 +24,8 @@ struct Mino {
 
 #[derive(Resource)]
 struct Minos(Vec<Mino>);
+
+struct NewBlockEvent;
 
 fn main() {
     App::new()
@@ -47,6 +44,7 @@ fn main() {
                     ..Default::default()
                 }),
         )
+        .add_event::<NewBlockEvent>()
         .add_startup_system(setup) // startupは複数登録するとまずい
         .add_system(position_transform)
         .add_system(spawn_mino)
@@ -87,9 +85,17 @@ fn setup(mut commands: Commands) {
     ]))
 }
 
-fn spawn_mino(mut commands: Commands, minos: Res<Minos>) {
+fn spawn_mino(
+    mut commands: Commands, 
+    minos: Res<Minos>,
+    mut new_block_events_reader: EventReader<NewBlockEvent>
+) {
+    if new_block_events_reader.iter().next().is_none() {
+        return;
+    }
+
     let mut rng = rand::thread_rng();
-    let mino_index : usize = rng.gen::<usize>() % minos.0.len();
+    let mino_index: usize = rng.gen::<usize>() % minos.0.len();
     let next_mino = &minos.0[mino_index];
 
     let pos_x = X_LENGTH as i32 / 2;
