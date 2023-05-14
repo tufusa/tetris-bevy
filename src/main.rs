@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use rand::Rng;
 // use rand::prelude::*;
 
 const UNIT_WIDTH: u32 = 40;
@@ -9,6 +10,17 @@ const Y_LENGTH: u32 = 18;
 
 const SCREEN_WIDTH: u32 = UNIT_WIDTH * X_LENGTH;
 const SCREEN_HEIGHT: u32 = UNIT_HEIGHT * Y_LENGTH;
+
+#[derive(Component)]
+struct Position {
+    x: i32,
+    y: i32,
+}
+
+#[derive(Resource)]
+struct Materials {
+    colors: Vec<Color>,
+}
 
 fn main() {
     App::new()
@@ -27,21 +39,56 @@ fn main() {
                     ..Default::default()
                 }),
         )
-        .add_startup_system(setup)
+        .add_startup_system(setup) // startupは複数登録するとまずい
+        .add_system(spawn_block)
+        .add_system(position_transform)
         .run();
 }
 
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
-    commands.spawn(SpriteBundle {
-        sprite: Sprite {
-            color: Color::WHITE,
-            ..Default::default()
-        },
-        transform: Transform {
-            scale: Vec3::new(20., 20., 0.),
-            ..Default::default()
-        },
-        ..Default::default()
+    commands.insert_resource(Materials {
+        colors: vec![
+            Color::rgb_u8(64, 230, 100),
+            Color::rgb_u8(220, 64, 90),
+            Color::rgb_u8(70, 150, 210),
+            Color::rgb_u8(220, 230, 70),
+            Color::rgb_u8(35, 220, 241),
+            Color::rgb_u8(240, 140, 70),
+        ],
     });
+}
+
+fn spawn_block(mut commands: Commands, materials: Res<Materials>) {
+    let mut rng = rand::thread_rng();
+    let color_index: usize = rng.gen::<usize>() % materials.colors.len();
+
+    commands
+        .spawn(SpriteBundle {
+            sprite: Sprite {
+                color: materials.colors[color_index],
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(Position { x: 1, y: 1 });
+}
+
+fn position_transform(mut position_query: Query<(&Position, &mut Transform, &mut Sprite)>) {
+    let origin_x = -(SCREEN_WIDTH as i32) / 2 + UNIT_WIDTH as i32 / 2;
+    let origin_y = -(SCREEN_HEIGHT as i32) / 2 + UNIT_HEIGHT as i32 / 2;
+    position_query
+        .iter_mut()
+        .for_each(|(pos, mut transform, mut _sprite)| {
+            transform.translation = Vec3 {
+                x: (origin_x + pos.x as i32 * UNIT_WIDTH as i32) as f32,
+                y: (origin_y + pos.y as i32 * UNIT_HEIGHT as i32) as f32,
+                z: 0.,
+            };
+            transform.scale = Vec3 {
+                x: UNIT_WIDTH as f32,
+                y: UNIT_HEIGHT as f32,
+                z: 0.,
+            };
+        });
 }
